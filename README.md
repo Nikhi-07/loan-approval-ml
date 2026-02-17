@@ -32,7 +32,7 @@ Live App: https://loanweb.streamlit.app
 6. Probability Prediction
 
 
-## 📸 Screenshots
+## Screenshots
 
 <p align="center">
   <img src="screenshots/datasetpreview.png" width="700"><br><br>
