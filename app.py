@@ -10,12 +10,53 @@ from sklearn.linear_model import LogisticRegression
 # PAGE CONFIG
 # ==================================================
 st.set_page_config(
-    page_title="CreditWise – Loan Approval System", page_icon="💳", layout="centered"
+    page_title="CreditWise – Loan Approval System",
+    page_icon="",
+    layout="centered"
 )
 
-st.title("💳 CreditWise – Loan Approval System")
-st.caption("ML-powered loan approval with probability scoring")
+# ==================================================
+# CUSTOM STYLING
+# ==================================================
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg, #1f1c2c, #928DAB);
+    color: white;
+}
 
+h1, h2, h3 {
+    color: #ffffff;
+    text-align: center;
+}
+
+.stButton>button {
+    background-color: #ff4b4b;
+    color: white;
+    font-size: 16px;
+    border-radius: 10px;
+    padding: 0.6em 1.2em;
+    border: none;
+    transition: 0.3s;
+}
+
+.stButton>button:hover {
+    background-color: #ff1e1e;
+    transform: scale(1.05);
+}
+
+.stProgress > div > div > div > div {
+    background-color: #00ffcc;
+}
+
+.block-container {
+    padding-top: 2rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.title(" CreditWise – Loan Approval System")
+st.caption("ML-powered loan approval with probability scoring")
 
 # ==================================================
 # LOAD DATA
@@ -23,7 +64,6 @@ st.caption("ML-powered loan approval with probability scoring")
 @st.cache_data
 def load_data():
     return pd.read_csv("clean_dataset.csv")
-
 
 df = load_data()
 
@@ -43,7 +83,7 @@ num_cols = X.select_dtypes(include=["int64", "float64"]).columns.tolist()
 cat_cols = X.select_dtypes(include=["object"]).columns.tolist()
 
 # ==================================================
-# PREPROCESSING (TRAINING)
+# PREPROCESSING
 # ==================================================
 num_imputer = SimpleImputer(strategy="median")
 cat_imputer = SimpleImputer(strategy="most_frequent")
@@ -55,7 +95,9 @@ ohe = OneHotEncoder(drop="first", handle_unknown="ignore", sparse_output=False)
 X_cat_encoded = ohe.fit_transform(X[cat_cols])
 
 X_cat_encoded_df = pd.DataFrame(
-    X_cat_encoded, columns=ohe.get_feature_names_out(cat_cols), index=X.index
+    X_cat_encoded,
+    columns=ohe.get_feature_names_out(cat_cols),
+    index=X.index
 )
 
 X_final = pd.concat([X.drop(columns=cat_cols), X_cat_encoded_df], axis=1)
@@ -74,42 +116,52 @@ TRAIN_COLUMNS = X_final.columns
 # ==================================================
 # SIDEBAR
 # ==================================================
-st.sidebar.header("🔎 Navigation")
+st.sidebar.header(" Navigation")
 page = st.sidebar.radio("Go to", ["Dataset Preview", "Loan Prediction"])
 
 # ==================================================
 # DATASET PAGE
 # ==================================================
 if page == "Dataset Preview":
-    st.subheader("📊 Dataset Preview")
+    st.subheader(" Dataset Preview")
     st.dataframe(df.head())
-    st.info(f"Model trained on {len(TRAIN_COLUMNS)} features")
+
+    st.markdown(
+        f"""
+        <div style="
+            background-color:#00bfff;
+            padding:12px;
+            border-radius:10px;
+            text-align:center;
+            font-weight:bold;
+            color:black;
+            font-size:16px;">
+            Model trained on {len(TRAIN_COLUMNS)} features
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 # ==================================================
 # LOAN PREDICTION PAGE
 # ==================================================
 if page == "Loan Prediction":
-    st.subheader("📝 Applicant Information")
+    st.subheader(" Applicant Information")
 
     with st.form("loan_form"):
         col1, col2 = st.columns(2)
 
         with col1:
-            Applicant_Income = st.number_input(
-                "Applicant Income", value=50000, min_value=0
-            )
-            Coapplicant_Income = st.number_input(
-                "Coapplicant Income", value=20000, min_value=0
-            )
+            Applicant_Income = st.number_input("Applicant Income", value=50000, min_value=0)
+            Coapplicant_Income = st.number_input("Coapplicant Income", value=20000, min_value=0)
             Loan_Amount = st.number_input("Loan Amount", value=150000, min_value=1000)
             Loan_Term = st.number_input("Loan Term (months)", value=240, min_value=12)
 
         with col2:
             Gender = st.selectbox("Gender", ["Male", "Female"])
             Marital_Status = st.selectbox("Marital Status", ["Single", "Married"])
-            Education_Level = st.selectbox(
-                "Education Level", ["Graduate", "Not Graduate"]
-            )
+            Education_Level = st.selectbox("Education Level", ["Graduate", "Not Graduate"])
             Employment_Status = st.selectbox(
                 "Employment Status",
                 ["Private", "Government", "MNC", "Business", "Unemployed"],
@@ -118,20 +170,14 @@ if page == "Loan Prediction":
         submit = st.form_submit_button("Check Loan Eligibility")
 
     if submit:
-        # ------------------------------------------
-        # CREATE REALISTIC BASELINE INPUT
-        # ------------------------------------------
         input_df = pd.DataFrame(columns=X.columns)
 
-        # Numeric → median
         for col in num_cols:
             input_df.loc[0, col] = X[col].median()
 
-        # Categorical → mode
         for col in cat_cols:
             input_df.loc[0, col] = X[col].mode()[0]
 
-        # Override with user inputs
         input_df.loc[0, "Applicant_Income"] = Applicant_Income
         input_df.loc[0, "Coapplicant_Income"] = Coapplicant_Income
         input_df.loc[0, "Loan_Amount"] = Loan_Amount
@@ -141,9 +187,6 @@ if page == "Loan Prediction":
         input_df.loc[0, "Education_Level"] = Education_Level
         input_df.loc[0, "Employment_Status"] = Employment_Status
 
-        # ------------------------------------------
-        # APPLY SAME PREPROCESSING
-        # ------------------------------------------
         input_df[num_cols] = num_imputer.transform(input_df[num_cols])
         input_df[cat_cols] = cat_imputer.transform(input_df[cat_cols])
 
@@ -158,22 +201,52 @@ if page == "Loan Prediction":
             [input_df.drop(columns=cat_cols), input_cat_encoded_df], axis=1
         )
 
-        # Align columns
         input_final = input_final.reindex(columns=TRAIN_COLUMNS, fill_value=0)
 
-        # ------------------------------------------
-        # PREDICTION
-        # ------------------------------------------
         input_scaled = scaler.transform(input_final)
         approval_prob = model.predict_proba(input_scaled)[0][1]
 
-        st.subheader("📈 Loan Approval Probability")
-        st.progress(int(approval_prob * 100))
-        st.write(f"**Approval Probability:** {approval_prob:.2%}")
+        # ==========================================
+        # BEAUTIFUL RESULT DISPLAY
+        # ==========================================
+        st.subheader("Loan Approval Probability")
 
-        # Custom threshold (realistic)
+        st.markdown(
+            f"""
+            <div style="
+                background-color:#00bfff;
+                padding:20px;
+                border-radius:15px;
+                text-align:center;">
+                <h2 style="color:#00ffcc;">{approval_prob:.2%}</h2>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.progress(int(approval_prob * 100))
+
         if approval_prob >= 0.45:
-            st.success("✅ Loan Approved")
+            st.markdown("""
+                <div style="
+                    background-color:#00cc66;
+                    padding:15px;
+                    border-radius:10px;
+                    text-align:center;
+                    font-weight:bold;
+                    font-size:18px;">
+                     Loan Approved
+                </div>
+            """, unsafe_allow_html=True)
         else:
-            st.error("❌ Loan Rejected")
-            
+            st.markdown("""
+                <div style="
+                    background-color:#ff4b4b;
+                    padding:15px;
+                    border-radius:10px;
+                    text-align:center;
+                    font-weight:bold;
+                    font-size:18px;">
+                     Loan Rejected
+                </div>
+            """, unsafe_allow_html=True)
